@@ -45,6 +45,10 @@ jobs:
       - name: Prepare Signing Keystore
         id: prepare_keystore
         run: |
+          # 确保 debug.keystore 存在
+          if [ -f "$GITHUB_WORKSPACE/debug.keystore.base64" ] && [ ! -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
+            base64 -d "$GITHUB_WORKSPACE/debug.keystore.base64" > "$GITHUB_WORKSPACE/debug.keystore"
+          fi
           # 确保 Release 构建拥有合法的签名 Keystore
           KEYSTORE_FILE="$GITHUB_WORKSPACE/release-upload.jks"
           if [ -f "$GITHUB_WORKSPACE/debug.keystore" ]; then

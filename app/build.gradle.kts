@@ -35,10 +35,13 @@ android {
   }
 
   val uploadKs = file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks")
-  if (!uploadKs.exists() && debugKs.exists()) {
-    try {
-      uploadKs.writeBytes(debugKs.readBytes())
-    } catch (_: Exception) {}
+  if (!uploadKs.exists()) {
+    val b64 = file("${rootDir}/my-upload-key.jks.base64")
+    if (b64.exists()) {
+      try {
+        uploadKs.writeBytes(Base64.getMimeDecoder().decode(b64.readText().trim()))
+      } catch (_: Exception) {}
+    }
   }
 
   signingConfigs {

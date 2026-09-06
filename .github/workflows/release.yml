@@ -54,17 +54,15 @@ jobs:
             keytool -genkey -v -keystore "$GITHUB_WORKSPACE/debug.keystore" -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
           fi
-          # 确保 Release 构建拥有合法的签名 Keystore
+
+          # 确保 Release 构建拥有合法的签名 Keystore (使用 Gradle 期待的 'upload' 别名)
           KEYSTORE_FILE="$GITHUB_WORKSPACE/release-upload.jks"
-          if [ -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
-            echo "Using existing debug keystore as release key fallback..."
-            cp "$GITHUB_WORKSPACE/debug.keystore" "$KEYSTORE_FILE"
-          else
-            echo "Generating release signing key..."
-            keytool -genkey -v -keystore "$KEYSTORE_FILE" -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass android -keypass android \
-              -dname "CN=ParcelApp, OU=AIStudio, O=AIStudio, L=City, ST=State, C=CN"
-          fi
+          echo "Generating release signing key with alias 'upload'..."
+          rm -f "$KEYSTORE_FILE"
+          keytool -genkey -v -keystore "$KEYSTORE_FILE" -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=ParcelApp, OU=AIStudio, O=AIStudio, L=City, ST=State, C=CN"
+
           echo "KEYSTORE_PATH=$KEYSTORE_FILE" >> $GITHUB_ENV
           echo "STORE_PASSWORD=android" >> $GITHUB_ENV
           echo "KEY_PASSWORD=android" >> $GITHUB_ENV

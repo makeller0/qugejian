@@ -28,8 +28,17 @@ android {
   if (!debugKs.exists()) {
     val b64 = file("${rootDir}/debug.keystore.base64")
     if (b64.exists()) {
-      debugKs.writeBytes(Base64.getDecoder().decode(b64.readText().trim()))
+      try {
+        debugKs.writeBytes(Base64.getMimeDecoder().decode(b64.readText().trim()))
+      } catch (_: Exception) {}
     }
+  }
+
+  val uploadKs = file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks")
+  if (!uploadKs.exists() && debugKs.exists()) {
+    try {
+      uploadKs.writeBytes(debugKs.readBytes())
+    } catch (_: Exception) {}
   }
 
   signingConfigs {

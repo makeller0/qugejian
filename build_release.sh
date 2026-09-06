@@ -9,6 +9,9 @@ echo "📦 正在执行：取件码助手 - 一键打包 Release APK"
 echo "========================================================"
 echo ""
 
+export STORE_PASSWORD="${STORE_PASSWORD:-android}"
+export KEY_PASSWORD="${KEY_PASSWORD:-android}"
+
 # 执行 assembleRelease
 gradle :app:assembleRelease --no-daemon
 

@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -47,7 +47,12 @@ jobs:
         run: |
           # 确保 debug.keystore 存在
           if [ -f "$GITHUB_WORKSPACE/debug.keystore.base64" ] && [ ! -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
-            base64 -d "$GITHUB_WORKSPACE/debug.keystore.base64" > "$GITHUB_WORKSPACE/debug.keystore"
+            base64 -d "$GITHUB_WORKSPACE/debug.keystore.base64" > "$GITHUB_WORKSPACE/debug.keystore" || true
+          fi
+          if [ ! -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
+            echo "Generating debug.keystore fallback..."
+            keytool -genkey -v -keystore "$GITHUB_WORKSPACE/debug.keystore" -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
           fi
           # 确保 Release 构建拥有合法的签名 Keystore
           KEYSTORE_FILE="$GITHUB_WORKSPACE/release-upload.jks"

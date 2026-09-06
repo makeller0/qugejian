@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Isometric Parcel Box (Centered inside 66dp safe area) -->
+    <!-- Top Lid / Left Flap -->
+    <path
+        android:fillColor="#E09F3E"
+        android:pathData="M54,28 L76,39 L54,50 L32,39 Z" />
+
+    <!-- Left Box Side -->
+    <path
+        android:fillColor="#C47E20"
+        android:pathData="M32,39 L54,50 L54,74 L32,63 Z" />
+
+    <!-- Right Box Side -->
+    <path
+        android:fillColor="#A26414"
+        android:pathData="M54,50 L76,39 L76,63 L54,74 Z" />
+
+    <!-- Top Tape / Seam -->
+    <path
+        android:fillColor="#F6BD60"
+        android:pathData="M48,31 L60,37 L60,43 L48,37 Z" />
+
+    <!-- Front Pickup Code Badge / Ticket (Floating forward) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,54 L68,54 A3,3 0 0,1 71,57 L71,76 A3,3 0 0,1 68,79 L42,79 A3,3 0 0,1 39,76 L39,57 A3,3 0 0,1 42,54 Z" />
+
+    <!-- Badge Header Bar -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M39,57 A3,3 0 0,1 42,54 L68,54 A3,3 0 0,1 71,57 L71,61 L39,61 Z" />
+
+    <!-- Barcode / Pickup Code Representation lines on ticket -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M43,65 L46,65 L46,74 L43,74 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M48,65 L50,65 L50,74 L48,74 Z" />
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M52,65 L56,65 L56,74 L52,74 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M58,65 L61,65 L61,74 L58,74 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M63,65 L67,65 L67,74 L63,74 Z" />
+
+    <!-- Subtle Checkmark on top corner -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M70,32 A7,7 0 1,0 70,46 A7,7 0 1,0 70,32 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M67,39 L69,41 L74,36" />
+</vector>

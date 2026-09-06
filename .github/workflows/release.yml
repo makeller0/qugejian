@@ -1,0 +1,122 @@
+name: Build & Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: '发布版本号 (如 v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_title:
+        description: 'Release 标题'
+        required: true
+        default: '取件码助手 正式版发布'
+      prerelease:
+        description: '是否为预发布版本 (Pre-release)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Release Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Signing Keystore
+        id: prepare_keystore
+        run: |
+          # 确保 Release 构建拥有合法的签名 Keystore
+          KEYSTORE_FILE="$GITHUB_WORKSPACE/release-upload.jks"
+          if [ -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
+            echo "Using existing debug keystore as release key fallback..."
+            cp "$GITHUB_WORKSPACE/debug.keystore" "$KEYSTORE_FILE"
+          else
+            echo "Generating release signing key..."
+            keytool -genkey -v -keystore "$KEYSTORE_FILE" -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=ParcelApp, OU=AIStudio, O=AIStudio, L=City, ST=State, C=CN"
+          fi
+          echo "KEYSTORE_PATH=$KEYSTORE_FILE" >> $GITHUB_ENV
+          echo "STORE_PASSWORD=android" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+
+      - name: Build Release APK
+        run: |
+          gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Package & Prepare Release Artifacts
+        id: package_apk
+        run: |
+          RELEASE_DIR="app/build/outputs/apk/release"
+          APK_FILE=$(find "$RELEASE_DIR" -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: No APK found in $RELEASE_DIR"
+            exit 1
+          fi
+
+          VERSION_TAG="${{ github.ref_name }}"
+          if [ -z "$VERSION_TAG" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION_TAG="${{ inputs.version_name }}"
+          fi
+          if [ -z "$VERSION_TAG" ]; then
+            VERSION_TAG="v1.0.0"
+          fi
+
+          FINAL_APK_NAME="ParcelCode-${VERSION_TAG}-release.apk"
+          cp "$APK_FILE" "./$FINAL_APK_NAME"
+          echo "Final APK created at: ./$FINAL_APK_NAME"
+          echo "apk_path=./$FINAL_APK_NAME" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+
+      - name: Upload APK to Workflow Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package_apk.outputs.version_tag }}-apk
+          path: ${{ steps.package_apk.outputs.apk_path }}
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.package_apk.outputs.version_tag }}
+          name: ${{ inputs.release_title || steps.package_apk.outputs.version_tag }}
+          files: |
+            ${{ steps.package_apk.outputs.apk_path }}
+          draft: false
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+          body: |
+            ## 📦 取件码助手 - GitHub Release 发布
+
+            ### ✨ 核心功能亮点
+            - **剪切板自动识别提取**：复制菜鸟、丰巢、兔喜等快递短信后打开 APP 自动识别取件码与单号
+            - **左滑标记取件完成**：取件码卡片向左滑动完成取件，丝滑自动切换下一条取件码
+            - **无包裹极简状态**：全部取件完毕或暂无包裹时，居中显示“您目前无包裹”
+            - **大字体极简设计**：超大字号突出核心取件码，降低视觉噪音
+            - **系统主题深浅跟随**：背景底色自适应跟随 Android 系统深色/浅色模式切换
+            - **桌面小组件支持**：桌面即刻一览待取件数量与最新取件码
+
+            ### 📱 安装包下载
+            - 直接下载下方的 **`${{ steps.package_apk.outputs.apk_path }}`** 安装即可使用。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

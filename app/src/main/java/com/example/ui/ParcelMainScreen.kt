@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -172,7 +171,6 @@ fun ParcelMainScreen(
                         "clear_picked" -> viewModel.clearAllPickedUp()
                         "load_samples" -> viewModel.loadSampleParcels()
                         "paste_sms" -> viewModel.openPasteSmsDialog(true)
-                        "open_release" -> viewModel.openReleaseDialog(true)
                         "open_theme" -> viewModel.openThemeDialog(true)
                     }
                 }
@@ -247,14 +245,6 @@ fun ParcelMainScreen(
             onConfirm = { smsText ->
                 viewModel.importSmsText(smsText)
             }
-        )
-    }
-
-    // Release Packager Dialog
-    if (uiState.isReleaseDialogOpen) {
-        ReleasePackagerDialog(
-            onDismiss = { viewModel.openReleaseDialog(false) },
-            onExportBackup = { viewModel.exportReleaseBackup(context) }
         )
     }
 
@@ -376,14 +366,6 @@ fun HeaderSection(
                             onClick = {
                                 menuExpanded = false
                                 onMoreMenuAction("load_samples")
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("一键打包 Release", fontSize = 14.sp, color = ParcelThemeColors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = ParcelThemeColors.textPrimary, modifier = Modifier.size(18.dp)) },
-                            onClick = {
-                                menuExpanded = false
-                                onMoreMenuAction("open_release")
                             }
                         )
                         DropdownMenuItem(
@@ -1210,140 +1192,6 @@ fun ManualAddDialog(
                         modifier = Modifier.testTag("btn_confirm_manual_add")
                     ) {
                         Text("保存", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Dialog for Release management and one-click export/packaging.
- */
-@Composable
-fun ReleasePackagerDialog(
-    onDismiss: () -> Unit,
-    onExportBackup: () -> Unit
-) {
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-    val releaseBuildCmd = "gradle :app:assembleRelease"
-    val scriptCmd = "./build_release.sh"
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = ParcelThemeColors.dialogSurface,
-            border = BorderStroke(1.dp, ParcelThemeColors.cardBorder),
-            tonalElevation = 6.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "一键打包 Release",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = ParcelThemeColors.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "发布管理与备份中心",
-                            fontSize = 13.sp,
-                            color = ParcelThemeColors.textSecondary
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(ParcelThemeColors.accentBadgeBg)
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "v1.0 Release",
-                            color = ParcelThemeColors.accentBadgeText,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Build details card
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = ParcelThemeColors.containerVariant),
-                    border = BorderStroke(1.dp, ParcelThemeColors.cardBorder),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "📦 应用发布参数",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = ParcelThemeColors.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("• 应用包名: com.aistudio.pickupcode.krvxqt", fontSize = 12.sp, color = ParcelThemeColors.textSecondary)
-                        Text("• 版本代码: VersionCode 1 (1.0)", fontSize = 12.sp, color = ParcelThemeColors.textSecondary)
-                        Text("• 输出路径: app/build/outputs/apk/release/", fontSize = 12.sp, color = ParcelThemeColors.textSecondary)
-                        Text("• 打包脚本: $scriptCmd", fontSize = 12.sp, color = ParcelThemeColors.textSecondary)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Quick Action 1: Export JSON release backup
-                Button(
-                    onClick = {
-                        onDismiss()
-                        onExportBackup()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ParcelThemeColors.primaryActionBg,
-                        contentColor = ParcelThemeColors.primaryActionText
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 12.dp)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("一键导出 Release 备份包 (JSON)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Quick Action 2: Copy assembleRelease command
-                OutlinedButton(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(releaseBuildCmd))
-                        Toast.makeText(context, "已复制构建命令：$releaseBuildCmd", Toast.LENGTH_SHORT).show()
-                    },
-                    border = BorderStroke(1.dp, ParcelThemeColors.cardBorder),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 12.dp)
-                ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, tint = ParcelThemeColors.textPrimary, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("复制 Gradle Release 打包指令", color = ParcelThemeColors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("关闭", color = ParcelThemeColors.textMuted, fontSize = 14.sp)
                     }
                 }
             }

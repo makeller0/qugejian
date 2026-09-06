@@ -36,7 +36,6 @@ data class ParcelUiState(
     val showClipboardPrompt: Boolean = false,
     val isManualAddDialogOpen: Boolean = false,
     val isPasteSmsDialogOpen: Boolean = false,
-    val isReleaseDialogOpen: Boolean = false,
     val isThemeDialogOpen: Boolean = false,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val toastMessage: String? = null
@@ -196,10 +195,6 @@ class ParcelViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.value = _uiState.value.copy(isPasteSmsDialogOpen = open)
     }
 
-    fun openReleaseDialog(open: Boolean) {
-        _uiState.value = _uiState.value.copy(isReleaseDialogOpen = open)
-    }
-
     fun openThemeDialog(open: Boolean) {
         _uiState.value = _uiState.value.copy(isThemeDialogOpen = open)
     }
@@ -222,51 +217,6 @@ class ParcelViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = _uiState.value.copy(
                 toastMessage = "已取件：${item.pickupCode}，已切换至下一件"
             )
-        }
-    }
-
-    /**
-     * Export all parcels and release configuration as a JSON payload,
-     * triggering Android's share chooser.
-     */
-    fun exportReleaseBackup(context: Context) {
-        viewModelScope.launch {
-            val allList = repository.allParcels.first()
-            val root = JSONObject()
-            root.put("appName", "取件码助手")
-            root.put("packageName", "com.aistudio.pickupcode.krvxqt")
-            root.put("versionName", "1.0")
-            root.put("versionCode", 1)
-            root.put("buildType", "release")
-            root.put("exportTime", System.currentTimeMillis())
-
-            val itemsArray = JSONArray()
-            for (p in allList) {
-                val obj = JSONObject()
-                obj.put("id", p.id)
-                obj.put("pickupCode", p.pickupCode)
-                obj.put("courierName", p.courierName)
-                obj.put("trackingNumber", p.trackingNumber)
-                obj.put("location", p.location)
-                obj.put("isPickedUp", p.isPickedUp)
-                obj.put("createdAt", p.createdAt)
-                itemsArray.put(obj)
-            }
-            root.put("parcels", itemsArray)
-
-            val jsonContent = root.toString(2)
-
-            val sendIntent: Intent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, jsonContent)
-                putExtra(Intent.EXTRA_SUBJECT, "取件码助手-Release数据备份包.json")
-                type = "text/plain"
-            }
-            val shareIntent = Intent.createChooser(sendIntent, "导出一键打包 Release 备份")
-            shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(shareIntent)
-
-            _uiState.value = _uiState.value.copy(toastMessage = "已生成 Release 备份包并调起导出")
         }
     }
 

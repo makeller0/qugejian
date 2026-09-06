@@ -63,7 +63,7 @@ object ParcelParser {
         val clean = text.trim()
         val hasKeyword = PARCEL_KEYWORDS.any { clean.contains(it) }
         val hasShelfPattern = Pattern.compile("\\b\\d{1,3}-\\d{1,3}-\\d{1,5}\\b").matcher(clean).find()
-        val hasCodePattern = Pattern.compile("(?:取件码|提货码|凭码)[:：\\s]*[A-Za-z0-9\\-]+").matcher(clean).find()
+        val hasCodePattern = Pattern.compile("(?:取件码|提货码|凭码)[:：\\s为是]*[A-Za-z0-9\\-]+").matcher(clean).find()
         return hasKeyword || hasShelfPattern || hasCodePattern
     }
 
@@ -121,16 +121,16 @@ object ParcelParser {
 
     private fun extractPickupCode(text: String, trackingNumber: String): String {
         // Priority 1: Shelf format like 3-2-104 or 1-201 or A-12-8 or 08-2-4019
-        val shelfPattern = Pattern.compile("(?:凭|取件码|提货码|码[：:]|码为)?\\s*([A-Za-z0-9]{1,4}-\\d{1,4}(?:-\\d{1,5})?)")
+        val shelfPattern = Pattern.compile("(?:凭|取件码|提货码|码[：:]|码为|码是)?\\s*([A-Za-z0-9]{1,4}-\\d{1,4}(?:-\\d{1,5})?)")
         val shelfMatcher = shelfPattern.matcher(text)
         if (shelfMatcher.find()) {
             val code = shelfMatcher.group(1)?.trim() ?: ""
             if (code.isNotBlank()) return cleanCode(code)
         }
 
-        // Priority 2: Labeled pickup code e.g. 取件码：849201 or 提货码 8921 or 凭 8921 到
+        // Priority 2: Labeled pickup code e.g. 取件码：849201 or 取件码为982143 or 提货码 8921 or 凭 8921 到
         val labeledPattern = Pattern.compile(
-            "(?:取件码|提货码|提件码|取货码|提取码|凭码|凭取件码|密码|开箱码|格口码|自提码|验证码|取包码)[:：\\s]*([A-Za-z0-9\\-#]{3,12})"
+            "(?:取件码|提货码|提件码|取货码|提取码|凭码|凭取件码|密码|开箱码|格口码|自提码|验证码|取包码)[:：\\s为是]*([A-Za-z0-9\\-#]{3,12})"
         )
         val labeledMatcher = labeledPattern.matcher(text)
         if (labeledMatcher.find()) {
@@ -151,7 +151,7 @@ object ParcelParser {
         }
 
         // Priority 4: Short numeric sequence (4 to 8 digits) if not identical to tracking
-        val digitPattern = Pattern.compile("\\b(\\d{4,8})\\b")
+        val digitPattern = Pattern.compile("(?:^|[^0-9A-Za-z])(\\d{4,8})(?:[^0-9A-Za-z]|$)")
         val digitMatcher = digitPattern.matcher(text)
         while (digitMatcher.find()) {
             val candidate = digitMatcher.group(1) ?: ""
@@ -167,7 +167,7 @@ object ParcelParser {
     private fun extractTrackingNumber(text: String): String {
         // Priority 1: Labeled tracking number e.g. 运单号: 773123456789 or 单号 SF1234567890
         val labeledPattern = Pattern.compile(
-            "(?:运单号|快递单号|单号为|包裹号|运单编号|快递号|单号)[:：\\s]*([A-Za-z0-9]{8,26})"
+            "(?:运单号|快递单号|单号为|单号是|包裹号|运单编号|快递号|单号)[:：\\s为是]*([A-Za-z0-9]{8,26})"
         )
         val labeledMatcher = labeledPattern.matcher(text)
         if (labeledMatcher.find()) {

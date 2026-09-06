@@ -2,5 +2,7 @@
   "name": "取件码助手",
   "description": "智能识别剪切板快递短信，提取取件码与快递单号，大字号极简设计，支持取件状态标记与桌面小组件。",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

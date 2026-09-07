@@ -14,12 +14,37 @@ android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
+  val appVersionName = (project.findProperty("appVersionName") as? String)
+    ?.trim()
+    ?.removePrefix("v")
+    ?.removePrefix("V")
+    ?: System.getenv("APP_VERSION_NAME")?.trim()?.removePrefix("v")?.removePrefix("V")
+    ?: "1.1.0"
+
+  fun deriveVersionCode(vName: String): Int {
+    return try {
+      val digits = vName.split(".").mapNotNull { part ->
+        part.takeWhile { it.isDigit() }.toIntOrNull()
+      }
+      val major = digits.getOrElse(0) { 1 }
+      val minor = digits.getOrElse(1) { 0 }
+      val patch = digits.getOrElse(2) { 0 }
+      major * 10000 + minor * 100 + patch
+    } catch (_: Exception) {
+      2
+    }
+  }
+
+  val appVersionCode = (project.findProperty("appVersionCode") as? String)?.toIntOrNull()
+    ?: System.getenv("APP_VERSION_CODE")?.toIntOrNull()
+    ?: deriveVersionCode(appVersionName)
+
   defaultConfig {
     applicationId = "com.aistudio.pickupcode.krvxqt"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = appVersionCode
+    versionName = appVersionName
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

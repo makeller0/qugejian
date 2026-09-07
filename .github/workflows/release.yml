@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: '发布版本号 (如 v1.0.0)'
+        description: '发布版本号 (如 v1.1.0)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.1.0'
       release_title:
         description: 'Release 标题'
         required: true
@@ -67,9 +67,65 @@ jobs:
           echo "STORE_PASSWORD=android" >> $GITHUB_ENV
           echo "KEY_PASSWORD=android" >> $GITHUB_ENV
 
+      - name: Resolve Version Information
+        id: resolve_version
+        run: |
+          VERSION_TAG="${{ github.ref_name }}"
+          if [ -z "$VERSION_TAG" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION_TAG="${{ inputs.version_name }}"
+          fi
+          if [ -z "$VERSION_TAG" ]; then
+            VERSION_TAG="v1.1.0"
+          fi
+
+          # 去除首尾空白
+          VERSION_TAG=$(echo "$VERSION_TAG" | xargs)
+
+          # 去除前面的 'v' 或 'V' 作为 Android 内部使用的 versionName (如 1.2.0)
+          CLEAN_VERSION=$(echo "$VERSION_TAG" | sed 's/^[vV]//')
+
+          # 确保 VERSION_TAG 带有统一的 v 前缀 (例如输入 1.2.0 时标准化为 v1.2.0 用于 GitHub Release Tag 和 APK 文件命名)
+          if [[ ! "$VERSION_TAG" =~ ^[vV] ]]; then
+            VERSION_TAG="v${VERSION_TAG}"
+          fi
+
+          # 计算语义化 versionCode (如 1.2.0 -> 10200)
+          IFS='.' read -r -a PARTS <<< "$CLEAN_VERSION"
+          MAJOR=$(echo "${PARTS[0]:-1}" | tr -cd '0-9')
+          MINOR=$(echo "${PARTS[1]:-0}" | tr -cd '0-9')
+          PATCH=$(echo "${PARTS[2]:-0}" | tr -cd '0-9')
+          MAJOR=${MAJOR:-1}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+          SEM_CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+
+          # 叠加 github.run_number 确保即便同版本重新构建也能递增并支持覆盖安装
+          RUN_NUM="${{ github.run_number }}"
+          if [ -n "$RUN_NUM" ]; then
+            VERSION_CODE=$(( SEM_CODE + RUN_NUM ))
+          else
+            VERSION_CODE=$SEM_CODE
+          fi
+
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "APP_VERSION_NAME=$CLEAN_VERSION" >> $GITHUB_ENV
+          echo "APP_VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "app_version_name=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "app_version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+          echo "=========================================="
+          echo "Release Version Tag: $VERSION_TAG"
+          echo "Android versionName: $CLEAN_VERSION"
+          echo "Android versionCode: $VERSION_CODE"
+          echo "=========================================="
+
       - name: Build Release APK
         run: |
-          gradle :app:assembleRelease --no-daemon --stacktrace
+          gradle :app:assembleRelease \
+            -PappVersionName="${{ env.APP_VERSION_NAME }}" \
+            -PappVersionCode="${{ env.APP_VERSION_CODE }}" \
+            --no-daemon --stacktrace
 
       - name: Package & Prepare Release Artifacts
         id: package_apk
@@ -81,12 +137,9 @@ jobs:
             exit 1
           fi
 
-          VERSION_TAG="${{ github.ref_name }}"
-          if [ -z "$VERSION_TAG" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION_TAG="${{ inputs.version_name }}"
-          fi
+          VERSION_TAG="${{ env.VERSION_TAG }}"
           if [ -z "$VERSION_TAG" ]; then
-            VERSION_TAG="v1.0.0"
+            VERSION_TAG="v1.1.0"
           fi
 
           FINAL_APK_NAME="ParcelCode-${VERSION_TAG}-release.apk"

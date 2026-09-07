@@ -37,10 +37,12 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Share
+import com.example.BuildConfig
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -109,6 +111,7 @@ fun ParcelMainScreen(
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Handle toast messages
     LaunchedEffect(uiState.toastMessage) {
@@ -172,6 +175,7 @@ fun ParcelMainScreen(
                         "load_samples" -> viewModel.loadSampleParcels()
                         "paste_sms" -> viewModel.openPasteSmsDialog(true)
                         "open_theme" -> viewModel.openThemeDialog(true)
+                        "about" -> showAboutDialog = true
                     }
                 }
             )
@@ -254,6 +258,13 @@ fun ParcelMainScreen(
             currentMode = uiState.themeMode,
             onDismiss = { viewModel.openThemeDialog(false) },
             onSelectMode = { viewModel.setThemeMode(it) }
+        )
+    }
+
+    // About & Version Dialog
+    if (showAboutDialog) {
+        AboutAppDialog(
+            onDismiss = { showAboutDialog = false }
         )
     }
 }
@@ -374,6 +385,14 @@ fun HeaderSection(
                             onClick = {
                                 menuExpanded = false
                                 onMoreMenuAction("open_theme")
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("关于与版本 (v${BuildConfig.VERSION_NAME})", fontSize = 14.sp, color = ParcelThemeColors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.Info, contentDescription = null, tint = ParcelThemeColors.textPrimary, modifier = Modifier.size(18.dp)) },
+                            onClick = {
+                                menuExpanded = false
+                                onMoreMenuAction("about")
                             }
                         )
                         DropdownMenuItem(
@@ -1294,6 +1313,93 @@ fun ThemeSelectorDialog(
                     TextButton(onClick = onDismiss) {
                         Text("完成", color = ParcelThemeColors.primaryActionBg, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AboutAppDialog(
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = ParcelThemeColors.dialogSurface),
+            border = BorderStroke(1.dp, ParcelThemeColors.cardBorder),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(ParcelThemeColors.accentBadgeBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.LocalShipping,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = ParcelThemeColors.accentBadgeText
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "取件码助手",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ParcelThemeColors.textPrimary
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = ParcelThemeColors.containerVariant,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "版本 v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ParcelThemeColors.accentBadgeText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "智能识别快递短信取件码 · 大字号极简设计 · 桌面小组件",
+                    fontSize = 13.sp,
+                    color = ParcelThemeColors.textSecondary,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ParcelThemeColors.primaryActionBg,
+                        contentColor = ParcelThemeColors.primaryActionText
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("我知道了", fontWeight = FontWeight.Bold)
                 }
             }
         }

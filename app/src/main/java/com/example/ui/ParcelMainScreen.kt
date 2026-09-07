@@ -32,17 +32,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Share
-import com.example.BuildConfig
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -67,6 +72,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import com.example.BuildConfig
+import com.example.ui.theme.AppColorPalette
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.ParcelThemeColors
 import androidx.compose.runtime.Composable
@@ -157,6 +164,7 @@ fun ParcelMainScreen(
             HeaderSection(
                 pendingCount = pendingCount,
                 themeMode = uiState.themeMode,
+                colorPalette = uiState.colorPalette,
                 onPasteClipboardClick = {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clipText = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
@@ -256,8 +264,10 @@ fun ParcelMainScreen(
     if (uiState.isThemeDialogOpen) {
         ThemeSelectorDialog(
             currentMode = uiState.themeMode,
+            currentPalette = uiState.colorPalette,
             onDismiss = { viewModel.openThemeDialog(false) },
-            onSelectMode = { viewModel.setThemeMode(it) }
+            onSelectMode = { viewModel.setThemeMode(it) },
+            onSelectPalette = { viewModel.setColorPalette(it) }
         )
     }
 
@@ -273,6 +283,7 @@ fun ParcelMainScreen(
 fun HeaderSection(
     pendingCount: Int,
     themeMode: AppThemeMode,
+    colorPalette: AppColorPalette,
     onPasteClipboardClick: () -> Unit,
     onMoreMenuAction: (String) -> Unit
 ) {
@@ -380,7 +391,7 @@ fun HeaderSection(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("外观主题 (${themeMode.title})", fontSize = 14.sp, color = ParcelThemeColors.textPrimary) },
+                            text = { Text("主题与配色 (${colorPalette.title} · ${themeMode.title})", fontSize = 14.sp, color = ParcelThemeColors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.Palette, contentDescription = null, tint = ParcelThemeColors.textPrimary, modifier = Modifier.size(18.dp)) },
                             onClick = {
                                 menuExpanded = false
@@ -658,7 +669,7 @@ fun ParcelCard(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (parcel.isPickedUp) ParcelThemeColors.textMuted else Color(0xFFBA1A1A))
+                            .background(if (parcel.isPickedUp) ParcelThemeColors.textMuted else ParcelThemeColors.unpickedDot)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     val locationLabel = if (parcel.location.isNotBlank()) {
@@ -1219,13 +1230,15 @@ fun ManualAddDialog(
 }
 
 /**
- * Dialog for selecting system theme mode (System / Light / Dark).
+ * Dialog for selecting high-end artistic palettes (Morandi, Monet, etc.) and display mode.
  */
 @Composable
 fun ThemeSelectorDialog(
     currentMode: AppThemeMode,
+    currentPalette: AppColorPalette,
     onDismiss: () -> Unit,
-    onSelectMode: (AppThemeMode) -> Unit
+    onSelectMode: (AppThemeMode) -> Unit,
+    onSelectPalette: (AppColorPalette) -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1235,83 +1248,248 @@ fun ThemeSelectorDialog(
             tonalElevation = 6.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "主题外观设置",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = ParcelThemeColors.textPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "支持背景颜色跟随系统深色/浅色模式",
-                    fontSize = 13.sp,
-                    color = ParcelThemeColors.textSecondary
-                )
+            Column(
+                modifier = Modifier
+                    .padding(22.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(ParcelThemeColors.accentBadgeBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = ParcelThemeColors.accentBadgeText,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "主题与艺术配色",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ParcelThemeColors.textPrimary
+                        )
+                        Text(
+                            text = "精选高阶调色方案，轻触即时切换预览",
+                            fontSize = 12.sp,
+                            color = ParcelThemeColors.textSecondary
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                AppThemeMode.values().forEach { mode ->
-                    val isSelected = currentMode == mode
+                // Section 1: Color Palettes
+                Text(
+                    text = "艺术配色方案",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ParcelThemeColors.textSecondary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                AppColorPalette.values().forEach { palette ->
+                    val isSelected = currentPalette == palette
                     Card(
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) ParcelThemeColors.accentBadgeBg else ParcelThemeColors.containerVariant
+                            containerColor = if (isSelected) ParcelThemeColors.accentBadgeBg.copy(alpha = 0.45f) else ParcelThemeColors.containerVariant
                         ),
                         border = BorderStroke(
-                            1.dp,
-                            if (isSelected) ParcelThemeColors.accentBadgeBg else ParcelThemeColors.cardBorder
+                            1.5.dp,
+                            if (isSelected) ParcelThemeColors.primaryActionBg else ParcelThemeColors.containerVariantBorder
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelectMode(mode) }
+                            .clickable { onSelectPalette(palette) }
                             .padding(vertical = 4.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = mode.title,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    fontSize = 15.sp,
-                                    color = if (isSelected) ParcelThemeColors.accentBadgeText else ParcelThemeColors.textPrimary
+                            // Three overlapping color dots swatch preview
+                            Box(
+                                modifier = Modifier
+                                    .width(44.dp)
+                                    .height(26.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(palette.previewPrimary)
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = when (mode) {
-                                        AppThemeMode.SYSTEM -> "背景自动跟随系统设置，白昼清爽，夜晚护眼"
-                                        AppThemeMode.LIGHT -> "高雅清爽浅色界面，高对比易读"
-                                        AppThemeMode.DARK -> "极简深夜深色模式，省电且柔和"
-                                    },
-                                    fontSize = 12.sp,
-                                    color = if (isSelected) ParcelThemeColors.accentBadgeText.copy(alpha = 0.8f) else ParcelThemeColors.textMuted
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = 12.dp)
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(palette.previewAccent)
+                                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = 24.dp)
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(palette.previewBg)
+                                        .border(1.dp, Color.Black.copy(alpha = 0.15f), CircleShape)
                                 )
                             }
-                            RadioButton(
-                                selected = isSelected,
-                                onClick = { onSelectMode(mode) },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = ParcelThemeColors.accentBadgeText,
-                                    unselectedColor = ParcelThemeColors.textMuted
+
+                            // Palette Details
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = palette.title,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        fontSize = 15.sp,
+                                        color = ParcelThemeColors.textPrimary
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(ParcelThemeColors.accentBadgeBg)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = palette.tag,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = ParcelThemeColors.accentBadgeText
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = palette.subtitle,
+                                    fontSize = 11.sp,
+                                    color = ParcelThemeColors.textSecondary,
+                                    lineHeight = 15.sp
                                 )
-                            )
+                            }
+
+                            // Selection Indicator Checkmark
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(ParcelThemeColors.primaryActionBg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = "已选择",
+                                        tint = ParcelThemeColors.primaryActionText,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // Section 2: Display Mode (System / Light / Dark)
+                Text(
+                    text = "显示外观模式",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ParcelThemeColors.textSecondary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("完成", color = ParcelThemeColors.primaryActionBg, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    AppThemeMode.values().forEach { mode ->
+                        val isModeSelected = currentMode == mode
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isModeSelected) ParcelThemeColors.primaryActionBg else ParcelThemeColors.containerVariant
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isModeSelected) ParcelThemeColors.primaryActionBg else ParcelThemeColors.containerVariantBorder
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onSelectMode(mode) }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                val modeIcon = when (mode) {
+                                    AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                    AppThemeMode.LIGHT -> Icons.Default.LightMode
+                                    AppThemeMode.DARK -> Icons.Default.DarkMode
+                                }
+                                Icon(
+                                    imageVector = modeIcon,
+                                    contentDescription = mode.title,
+                                    tint = if (isModeSelected) ParcelThemeColors.primaryActionText else ParcelThemeColors.textPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = mode.title,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isModeSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isModeSelected) ParcelThemeColors.primaryActionText else ParcelThemeColors.textPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Bottom Action
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${currentPalette.title} · ${currentMode.title}",
+                        fontSize = 12.sp,
+                        color = ParcelThemeColors.textMuted
+                    )
+                    Button(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ParcelThemeColors.primaryActionBg,
+                            contentColor = ParcelThemeColors.primaryActionText
+                        )
+                    ) {
+                        Text("完成", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }

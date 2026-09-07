@@ -8,6 +8,7 @@ import com.example.data.ParcelItem
 import com.example.data.ParcelRepository
 import com.example.parser.ParcelParser
 import com.example.parser.ParsedParcel
+import com.example.ui.theme.AppColorPalette
 import com.example.ui.theme.AppThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,19 +39,40 @@ data class ParcelUiState(
     val isPasteSmsDialogOpen: Boolean = false,
     val isThemeDialogOpen: Boolean = false,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    val colorPalette: AppColorPalette = AppColorPalette.MORANDI,
     val toastMessage: String? = null
 )
 
 class ParcelViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: ParcelRepository
+    private val themePrefs = application.getSharedPreferences("parcel_theme_prefs", Context.MODE_PRIVATE)
+
+    private val _uiState: MutableStateFlow<ParcelUiState>
 
     init {
         val db = ParcelDatabase.getDatabase(application)
         repository = ParcelRepository(application, db.parcelDao())
+
+        val savedThemeMode = try {
+            AppThemeMode.valueOf(themePrefs.getString("theme_mode", AppThemeMode.SYSTEM.name) ?: AppThemeMode.SYSTEM.name)
+        } catch (e: Exception) {
+            AppThemeMode.SYSTEM
+        }
+        val savedPalette = try {
+            AppColorPalette.valueOf(themePrefs.getString("color_palette", AppColorPalette.MORANDI.name) ?: AppColorPalette.MORANDI.name)
+        } catch (e: Exception) {
+            AppColorPalette.MORANDI
+        }
+
+        _uiState = MutableStateFlow(
+            ParcelUiState(
+                themeMode = savedThemeMode,
+                colorPalette = savedPalette
+            )
+        )
     }
 
-    private val _uiState = MutableStateFlow(ParcelUiState())
     val uiState: StateFlow<ParcelUiState> = _uiState.asStateFlow()
 
     private var lastDismissedClipboard: String = ""
@@ -200,10 +222,18 @@ class ParcelViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun setThemeMode(mode: AppThemeMode) {
+        themePrefs.edit().putString("theme_mode", mode.name).apply()
         _uiState.value = _uiState.value.copy(
             themeMode = mode,
-            isThemeDialogOpen = false,
-            toastMessage = "主题已切换为：${mode.title}"
+            toastMessage = "外观模式已切换为：${mode.title}"
+        )
+    }
+
+    fun setColorPalette(palette: AppColorPalette) {
+        themePrefs.edit().putString("color_palette", palette.name).apply()
+        _uiState.value = _uiState.value.copy(
+            colorPalette = palette,
+            toastMessage = "配色已切换为：${palette.title}"
         )
     }
 

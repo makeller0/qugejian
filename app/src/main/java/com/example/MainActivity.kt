@@ -31,7 +31,10 @@ class MainActivity : ComponentActivity() {
                 AppThemeMode.DARK -> true
             }
 
-            MyApplicationTheme(darkTheme = useDarkTheme) {
+            MyApplicationTheme(
+                palette = uiState.colorPalette,
+                darkTheme = useDarkTheme
+            ) {
                 ParcelMainScreen(viewModel = viewModel)
             }
         }

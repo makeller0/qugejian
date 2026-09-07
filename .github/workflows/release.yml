@@ -45,7 +45,7 @@ jobs:
       - name: Prepare Signing Keystore
         id: prepare_keystore
         run: |
-          # 确保 debug.keystore 存在
+          # 1. 确保 debug.keystore 存在
           if [ -f "$GITHUB_WORKSPACE/debug.keystore.base64" ] && [ ! -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
             base64 -d "$GITHUB_WORKSPACE/debug.keystore.base64" > "$GITHUB_WORKSPACE/debug.keystore" || true
           fi
@@ -55,17 +55,28 @@ jobs:
               -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-          # 确保 Release 构建拥有合法的签名 Keystore (使用 Gradle 期待的 'upload' 别名)
-          KEYSTORE_FILE="$GITHUB_WORKSPACE/release-upload.jks"
-          echo "Generating release signing key with alias 'upload'..."
-          rm -f "$KEYSTORE_FILE"
-          keytool -genkey -v -keystore "$KEYSTORE_FILE" -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=ParcelApp, OU=AIStudio, O=AIStudio, L=City, ST=State, C=CN"
+          # 2. 准备永久固定的 Release 签名 Keystore (使用仓库持久化的 my-upload-key.jks)
+          # 注意：千万不可在每次构建中动态生成临时密钥，否则会导致每次发布的 APK 签名证书不同，用户手机无法覆盖升级安装！
+          KEYSTORE_FILE="$GITHUB_WORKSPACE/my-upload-key.jks"
+          if [ ! -f "$KEYSTORE_FILE" ] && [ -f "$GITHUB_WORKSPACE/my-upload-key.jks.base64" ]; then
+            echo "Restoring persistent my-upload-key.jks from base64..."
+            base64 -d "$GITHUB_WORKSPACE/my-upload-key.jks.base64" > "$KEYSTORE_FILE"
+          fi
+
+          # 若用户配置了 GitHub Secrets RELEASE_KEYSTORE_BASE64，则优先采用
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "Using custom keystore from GitHub Secrets..."
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$KEYSTORE_FILE"
+          fi
+
+          if [ ! -f "$KEYSTORE_FILE" ]; then
+            echo "Error: Release keystore file not found!"
+            exit 1
+          fi
 
           echo "KEYSTORE_PATH=$KEYSTORE_FILE" >> $GITHUB_ENV
-          echo "STORE_PASSWORD=android" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+          echo "STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD || 'android' }}" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD || 'android' }}" >> $GITHUB_ENV
 
       - name: Resolve Version Information
         id: resolve_version

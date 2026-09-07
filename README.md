@@ -24,18 +24,19 @@
 2. 点击顶部导航栏的 **「Actions」** 选项卡。
 3. 在左侧工作流列表中选择 **「Build & Publish GitHub Release」**。
 4. 点击右侧的 **「Run workflow」** 按钮：
-   - 输入发布版本号（默认 `v1.0.0`）
-   - 输入 Release 标题
+   - **发布版本号**：输入想要发布的版本（如 `v1.1.0` 或 `v1.2.0`）
+   - **Release 标题**：输入发布标题
+   - **本次更新说明**：填入本次更新内容（支持多行 Markdown，例如 `- 修复XXX问题\n- 新增XXX特性`；若留空，系统将自动读取根目录 `CHANGELOG.md` 中对应版本的更新日志）
    - 点击绿色的 **「Run workflow」** 触发。
-5. 等待 1~2 分钟，构建完成后前往项目主页右侧的 **「Releases」** 栏，即可直接下载打包好的正式版 APK（`ParcelCode-v1.0.0-release.apk`）。
+5. 等待 1~2 分钟，构建完成后前往项目主页右侧的 **「Releases」** 栏，即可查看到包含完整更新日志、包校验信息与永久签名保障说明的正式版 Release，并直接下载打包好的 APK（如 `ParcelCode-v1.1.0-release.apk`）。
 
 ### 方式二：通过 Git Tag 自动触发
 在本地终端给仓库打上版本 Tag 并推送至 GitHub：
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
-GitHub Actions 检测到 `v*` 开头的 Tag 后，会自动执行构建、打包并在 GitHub Releases 页面发布该版本及对应的 APK 安装包。
+GitHub Actions 检测到 `v*` 开头的 Tag 后，会自动提取 `CHANGELOG.md` 中对应版本的更新说明写入 Release 正文，并自动打包 APK 上传至 GitHub Releases。
 
 ---
 
